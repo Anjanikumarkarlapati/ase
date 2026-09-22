@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:menu_test;DB_CLOSE_DELAY=-1
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+bistrobyte:
+  security:
+    jwt:
+      secret: test-secret-key-for-bistrobyte-unit-tests-0123456789
+      issuer: bistrobyte-user-service
+  seed:
+    enabled: false
+
+logging:
+  level:
+    com.bistrobyte: INFO

@@ -1,0 +1,87 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          # Services are routed explicitly below; automatic locator stays off so that
+          # only the intended paths are exposed to the outside world.
+          enabled: false
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+            allowedHeaders: "*"
+            allowCredentials: true
+      routes:
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/v1/auth/**,/api/v1/users/**
+        - id: menu-service
+          uri: lb://menu-service
+          predicates:
+            - Path=/api/v1/menu/**,/api/v1/categories/**
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/v1/orders/**
+  main:
+    web-application-type: reactive
+
+bistrobyte:
+  security:
+    jwt:
+      secret: ${BISTROBYTE_JWT_SECRET:bistrobyte-super-secret-signing-key-change-me-in-production}
+      issuer: bistrobyte-user-service
+      public-paths:
+        - /api/v1/auth/register
+        - /api/v1/auth/login
+        - /api/v1/auth/refresh
+        - /actuator/**
+        - /v3/api-docs/**
+        - /swagger-ui/**
+      # Coarse edge rules. Services still enforce the same rules with @PreAuthorize.
+      role-rules:
+        - pattern: /api/v1/menu/items/**
+          methods: [POST, PUT, DELETE]
+          roles: [ADMIN, STAFF]
+        - pattern: /api/v1/categories/**
+          methods: [POST, PUT, DELETE]
+          roles: [ADMIN, STAFF]
+        - pattern: /api/v1/users/**
+          methods: [GET, PUT, DELETE]
+          roles: [ADMIN, STAFF, CUSTOMER, KITCHEN]
+        - pattern: /api/v1/orders/kitchen/**
+          roles: [KITCHEN, STAFF, ADMIN]
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    com.bistrobyte.gateway: DEBUG

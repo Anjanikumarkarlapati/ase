@@ -1,0 +1,77 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: order-service
+  datasource:
+    url: jdbc:h2:mem:bistrobyte_orders;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+  jackson:
+    default-property-inclusion: non_null
+
+bistrobyte:
+  security:
+    jwt:
+      # Shared with the gateway and every other service; override in production.
+      secret: ${BISTROBYTE_JWT_SECRET:bistrobyte-super-secret-signing-key-change-me-in-production}
+      issuer: bistrobyte-user-service
+  orders:
+    # 5% service tax, a flat delivery fee and the padding used for ready-time promises.
+    tax-rate: 0.05
+    delivery-fee: 2.50
+    delivery-preparation-buffer-minutes: 20
+    in-house-preparation-buffer-minutes: 5
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.bistrobyte: DEBUG
+
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 3000
+        read-timeout: 8000
+        logger-level: basic
+  circuitbreaker:
+    # Left off deliberately: the menu service is the source of truth for stock, so a
+    # failed reservation must surface to the customer rather than be served by a fallback.
+    enabled: false
